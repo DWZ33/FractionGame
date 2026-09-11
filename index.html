@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fraction Bars: Whole Class Challenge</title>
+<style>
+  :root{
+    --bg: #14213d;
+    --panel: #1b2a4a;
+    --ink: #ffffff;
+    --sub: #b9c6e6;
+    --half: #ffb703;
+    --third: #06d6a0;
+    --quarter: #ef476f;
+    --success: #2ec4b6;
+    --slot-empty: #24345c;
+    --gold: #ffd166;
+    --reject: #ff4d5e;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Trebuchet MS', 'Segoe UI', system-ui, sans-serif;
+    overflow-x: hidden;
+  }
+
+  body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    padding: 24px 32px 48px;
+  }
+
+  /* ---------- Top bar ---------- */
+  .topbar {
+    width: 100%;
+    max-width: 1400px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+
+  .game-title {
+    font-size: clamp(28px, 3vw, 40px);
+    font-weight: 800;
+    letter-spacing: 0.5px;
+  }
+  .game-title span { color: var(--gold); }
+
+  .progress-dots {
+    display: flex;
+    gap: 16px;
+  }
+  .dot {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--slot-empty);
+    border: 3px solid var(--sub);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--sub);
+    transition: all 0.3s ease;
+  }
+  .dot.active {
+    background: var(--gold);
+    border-color: var(--gold);
+    color: var(--bg);
+    transform: scale(1.25);
+  }
+  .dot.done {
+    background: var(--success);
+    border-color: var(--success);
+    color: var(--bg);
+  }
+
+  /* ---------- Challenge panel ---------- */
+  .stage {
+    width: 100%;
+    max-width: 1400px;
+    background: var(--panel);
+    border-radius: 28px;
+    padding: 40px 48px 56px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+    position: relative;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 680px;
+  }
+
+  .challenge-heading {
+    text-align: center;
+    margin-bottom: 8px;
+  }
+  .challenge-heading .label {
+    font-size: clamp(18px, 2vw, 24px);
+    color: var(--sub);
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .challenge-heading h1 {
+    font-size: clamp(32px, 4.2vw, 52px);
+    margin: 0;
+    font-weight: 800;
+  }
+
+  .instructions {
+    font-size: clamp(20px, 2.2vw, 26px);
+    color: var(--sub);
+    text-align: center;
+    margin: 12px 0 28px;
+    max-width: 900px;
+    font-weight: 600;
+  }
+
+  /* ---------- Feedback message ---------- */
+  .feedback-msg {
+    min-height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: clamp(20px, 2.4vw, 28px);
+    font-weight: 800;
+    color: var(--reject);
+    text-align: center;
+    margin-bottom: 8px;
+    opacity: 0;
+    transform: translateY(-6px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+  .feedback-msg.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* ---------- The fraction bar ---------- */
+  .bar-wrap {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    margin-bottom: 48px;
+  }
+
+  .bar {
+    display: flex;
+    width: 100%;
+    max-width: 1100px;
+    height: 160px;
+    border: 6px solid var(--ink);
+    border-radius: 18px;
+    overflow: hidden;
+    background: var(--slot-empty);
+    box-shadow: 0 8px 0 rgba(0,0,0,0.25);
+    transition: max-width 0.4s ease;
+  }
+  .bar.half-size { max-width: 550px; }
+
+  .slot {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-right: 4px dashed rgba(255,255,255,0.35);
+    font-size: clamp(28px, 3.6vw, 44px);
+    font-weight: 800;
+    color: rgba(255,255,255,0.35);
+    transition: background 0.25s ease, color 0.25s ease, transform 0.25s ease;
+    cursor: pointer;
+    user-select: none;
+  }
+  .slot:last-child { border-right: none; }
+  .slot.filled {
+    color: var(--bg);
+    animation: pop 0.35s ease;
+  }
+  .slot.filled.half { background: var(--half); }
+  .slot.filled.third { background: var(--third); }
+  .slot.filled.quarter { background: var(--quarter); }
+
+  @keyframes pop {
+    0% { transform: scale(0.7); }
+    60% { transform: scale(1.08); }
+    100% { transform: scale(1); }
+  }
+
+  /* ---------- Block pool ---------- */
+  .pool-label {
+    font-size: clamp(18px, 2vw, 22px);
+    color: var(--sub);
+    font-weight: 700;
+    margin-bottom: 18px;
+    text-align: center;
+  }
+
+  .pool {
+    display: flex;
+    gap: 28px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 12px;
+  }
+
+  .block {
+    min-width: 150px;
+    height: 130px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: clamp(30px, 3.4vw, 40px);
+    font-weight: 800;
+    color: #14213d;
+    border-radius: 16px;
+    border: 5px solid rgba(0,0,0,0.25);
+    box-shadow: 0 8px 0 rgba(0,0,0,0.3);
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.2s ease, background 0.2s ease;
+    touch-action: manipulation;
+  }
+  .block:active { transform: translateY(6px); box-shadow: 0 2px 0 rgba(0,0,0,0.3); }
+  .block.used { opacity: 0; pointer-events: none; transform: scale(0.5); }
+  .block.half { background: var(--half); }
+  .block.third { background: var(--third); }
+  .block.quarter { background: var(--quarter); }
+
+  .block.wrong-flash {
+    background: var(--reject) !important;
+    color: #ffffff;
+    animation: shake 0.5s ease;
+  }
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    15% { transform: translateX(-16px); }
+    30% { transform: translateX(14px); }
+    45% { transform: translateX(-12px); }
+    60% { transform: translateX(10px); }
+    75% { transform: translateX(-6px); }
+    90% { transform: translateX(4px); }
+  }
+
+  /* ---------- Success overlay ---------- */
+  .success-banner {
+    position: absolute;
+    inset: 0;
+    background: rgba(20, 33, 61, 0.94);
+    border-radius: 28px;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 20px;
+    z-index: 10;
+  }
+  .success-banner.show { display: flex; }
+
+  .success-emoji {
+    font-size: clamp(60px, 8vw, 100px);
+    margin-bottom: 16px;
+    animation: bounce-in 0.5s ease;
+  }
+  @keyframes bounce-in {
+    0% { transform: scale(0); }
+    60% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+  }
+
+  .success-text {
+    font-size: clamp(30px, 4.4vw, 56px);
+    font-weight: 800;
+    color: var(--gold);
+    margin-bottom: 32px;
+    line-height: 1.3;
+  }
+
+  .btn {
+    font-size: clamp(22px, 2.4vw, 30px);
+    font-weight: 800;
+    padding: 20px 52px;
+    border-radius: 50px;
+    border: none;
+    cursor: pointer;
+    background: var(--gold);
+    color: var(--bg);
+    box-shadow: 0 8px 0 #b8860b;
+    transition: transform 0.1s ease;
+  }
+  .btn:active { transform: translateY(6px); box-shadow: 0 2px 0 #b8860b; }
+
+  /* confetti */
+  .confetti {
+    position: absolute;
+    top: -20px;
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    animation: fall linear forwards;
+    z-index: 5;
+  }
+  @keyframes fall {
+    to { transform: translateY(110vh) rotate(540deg); opacity: 0.3; }
+  }
+
+  /* ---------- Final screen ---------- */
+  .final-screen {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    flex: 1;
+  }
+  .final-screen.show { display: flex; }
+  .final-screen .big-emoji {
+    font-size: clamp(70px, 10vw, 120px);
+    margin-bottom: 20px;
+  }
+  .final-screen h1 {
+    font-size: clamp(36px, 5vw, 64px);
+    color: var(--gold);
+    margin: 0 0 16px;
+  }
+  .final-screen p {
+    font-size: clamp(20px, 2.4vw, 28px);
+    color: var(--sub);
+    margin: 0 0 40px;
+    max-width: 700px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+  <div class="topbar">
+    <div class="game-title">Fraction <span>Bars</span></div>
+    <div class="progress-dots" id="progressDots">
+      <div class="dot" data-step="1">1</div>
+      <div class="dot" data-step="2">2</div>
+      <div class="dot" data-step="3">3</div>
+    </div>
+  </div>
+
+  <div class="stage" id="stage">
+
+    <!-- CHALLENGE CONTENT -->
+    <div id="challengeArea" style="width:100%; display:flex; flex-direction:column; align-items:center;">
+      <div class="challenge-heading">
+        <div class="label" id="challengeLabel">Challenge 1 of 3</div>
+        <h1 id="challengeTitle">Make 1 Whole using Halves</h1>
+      </div>
+      <div class="instructions" id="challengeInstructions">
+        Click the 1/2 blocks below to fill the bar and make one whole.
+      </div>
+
+      <div class="feedback-msg" id="feedbackMsg"></div>
+
+      <div class="bar-wrap">
+        <div class="bar" id="bar"></div>
+      </div>
+
+      <div class="pool-label" id="poolLabel">Block Pool</div>
+      <div class="pool" id="pool"></div>
+    </div>
+
+    <!-- SUCCESS OVERLAY -->
+    <div class="success-banner" id="successBanner">
+      <div class="success-emoji">🎉</div>
+      <div class="success-text" id="successText">1/2 + 1/2 = 1 Whole!</div>
+      <button class="btn" id="nextBtn">Next Challenge →</button>
+    </div>
+
+    <!-- FINAL SCREEN -->
+    <div class="final-screen" id="finalScreen">
+      <div class="big-emoji">🏆</div>
+      <h1>Great Job, Mathematicians!</h1>
+      <p>You built halves, thirds, and quarters like a fraction pro — and didn't get fooled by the tricky pieces!</p>
+      <button class="btn" id="restartBtn">Restart Game</button>
+    </div>
+
+  </div>
+
+<script>
+(function () {
+  // Each challenge lists the pool as an array of {type, label} pieces.
+  // The blockType/blockLabel fields define the CORRECT piece for the bar.
+  const challenges = [
+    {
+      label: "Challenge 1 of 3",
+      title: "Make 1 Whole using Halves",
+      instructions: "Click the 1/2 blocks below to fill the bar and make one whole. Watch out — not every block fits!",
+      slots: 2,
+      barClass: "",
+      blockType: "half",
+      blockLabel: "1/2",
+      pool: [
+        { type: "half", label: "1/2" },
+        { type: "half", label: "1/2" },
+        { type: "third", label: "1/3" },
+        { type: "quarter", label: "1/4" }
+      ],
+      successText: "1/2 + 1/2 = 1 Whole!"
+    },
+    {
+      label: "Challenge 2 of 3",
+      title: "Make 1 Whole using Thirds",
+      instructions: "Click the 1/3 blocks below to fill all three parts of the bar. Watch out — not every block fits!",
+      slots: 3,
+      barClass: "",
+      blockType: "third",
+      blockLabel: "1/3",
+      pool: [
+        { type: "third", label: "1/3" },
+        { type: "half", label: "1/2" },
+        { type: "third", label: "1/3" },
+        { type: "quarter", label: "1/4" },
+        { type: "third", label: "1/3" }
+      ],
+      successText: "1/3 + 1/3 + 1/3 = 1 Whole!"
+    },
+    {
+      label: "Challenge 3 of 3",
+      title: "Make 1 Half using Quarters",
+      instructions: "This bar is only 1/2 size. Click just the 1/4 blocks you need to match its length. Watch out — not every block fits!",
+      slots: 2,
+      barClass: "half-size",
+      blockType: "quarter",
+      blockLabel: "1/4",
+      pool: [
+        { type: "quarter", label: "1/4" },
+        { type: "half", label: "1/2" },
+        { type: "quarter", label: "1/4" },
+        { type: "third", label: "1/3" },
+        { type: "quarter", label: "1/4" }
+      ],
+      successText: "1/4 + 1/4 = 1/2!"
+    }
+  ];
+
+  let current = 0;
+  let filledCount = 0;
+  let feedbackTimer = null;
+
+  const bar = document.getElementById('bar');
+  const pool = document.getElementById('pool');
+  const challengeLabel = document.getElementById('challengeLabel');
+  const challengeTitle = document.getElementById('challengeTitle');
+  const challengeInstructions = document.getElementById('challengeInstructions');
+  const poolLabel = document.getElementById('poolLabel');
+  const feedbackMsg = document.getElementById('feedbackMsg');
+  const successBanner = document.getElementById('successBanner');
+  const successText = document.getElementById('successText');
+  const nextBtn = document.getElementById('nextBtn');
+  const restartBtn = document.getElementById('restartBtn');
+  const challengeArea = document.getElementById('challengeArea');
+  const finalScreen = document.getElementById('finalScreen');
+  const stage = document.getElementById('stage');
+  const dots = document.querySelectorAll('.dot');
+
+  // ---------- Tiny oops beep (Web Audio, no external files) ----------
+  let audioCtx = null;
+  function playOopsSound() {
+    try {
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(220, audioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(110, audioCtx.currentTime + 0.25);
+      gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.3);
+    } catch (e) {
+      // Audio not available — silently ignore, visuals still carry the feedback.
+    }
+  }
+
+  function playWinSound() {
+    try {
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6 — a bright little fanfare
+      notes.forEach((freq, i) => {
+        const start = audioCtx.currentTime + i * 0.12;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, start);
+        gain.gain.setValueAtTime(0.0001, start);
+        gain.gain.exponentialRampToValueAtTime(0.2, start + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.35);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(start);
+        osc.stop(start + 0.4);
+      });
+    } catch (e) {
+      // Audio not available — silently ignore, the visuals still celebrate.
+    }
+  }
+
+  function shuffle(arr) {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  function updateDots() {
+    dots.forEach((dot, i) => {
+      dot.classList.remove('active', 'done');
+      if (i < current) dot.classList.add('done');
+      else if (i === current) dot.classList.add('active');
+    });
+  }
+
+  function showFeedback(text) {
+    clearTimeout(feedbackTimer);
+    feedbackMsg.textContent = text;
+    feedbackMsg.classList.add('show');
+    feedbackTimer = setTimeout(() => {
+      feedbackMsg.classList.remove('show');
+    }, 1600);
+  }
+
+  function loadChallenge(index) {
+    const c = challenges[index];
+    filledCount = 0;
+
+    challengeLabel.textContent = c.label;
+    challengeTitle.textContent = c.title;
+    challengeInstructions.textContent = c.instructions;
+    poolLabel.textContent = `Block Pool — click a ${c.blockLabel} block to fit the bar`;
+    feedbackMsg.classList.remove('show');
+    feedbackMsg.textContent = '';
+
+    // Build bar slots
+    bar.className = 'bar ' + c.barClass;
+    bar.innerHTML = '';
+    for (let i = 0; i < c.slots; i++) {
+      const slot = document.createElement('div');
+      slot.className = 'slot';
+      slot.dataset.index = i;
+      bar.appendChild(slot);
+    }
+
+    // Build shuffled pool blocks (correct pieces + distractors)
+    pool.innerHTML = '';
+    const shuffled = shuffle(c.pool);
+    shuffled.forEach((piece, i) => {
+      const block = document.createElement('div');
+      block.className = 'block ' + piece.type;
+      block.textContent = piece.label;
+      block.dataset.index = i;
+      block.dataset.type = piece.type;
+      block.addEventListener('click', () => placeBlock(block, piece, c));
+      pool.appendChild(block);
+    });
+
+    successBanner.classList.remove('show');
+    challengeArea.style.display = 'flex';
+    finalScreen.classList.remove('show');
+    updateDots();
+  }
+
+  function placeBlock(block, piece, c) {
+    if (block.classList.contains('used')) return;
+
+    // Wrong fraction type for this challenge — reject it.
+    if (piece.type !== c.blockType) {
+      rejectBlock(block);
+      return;
+    }
+
+    const slots = bar.querySelectorAll('.slot');
+    const emptySlot = Array.from(slots).find(s => !s.classList.contains('filled'));
+
+    // Right type, but the bar is already full — also reject, gently.
+    if (!emptySlot) {
+      showFeedback("The bar is already full! Move on to the next challenge.");
+      rejectBlock(block, false);
+      return;
+    }
+
+    // Correct fit!
+    emptySlot.classList.add('filled', c.blockType);
+    emptySlot.textContent = c.blockLabel;
+    block.classList.add('used');
+    filledCount++;
+
+    if (filledCount === c.slots) {
+      setTimeout(() => showSuccess(c), 350);
+    }
+  }
+
+  function rejectBlock(block, playSound = true) {
+    if (playSound) {
+      showFeedback("That piece doesn't fit here! Try finding a piece that matches.");
+      playOopsSound();
+    }
+    block.classList.add('wrong-flash');
+    setTimeout(() => block.classList.remove('wrong-flash'), 500);
+  }
+
+  function showSuccess(c) {
+    successText.textContent = c.successText;
+    successBanner.classList.add('show');
+    launchConfetti();
+    playWinSound();
+  }
+
+  function launchConfetti() {
+    const colors = ['#ffb703', '#06d6a0', '#ef476f', '#ffd166', '#2ec4b6'];
+    for (let i = 0; i < 60; i++) {
+      const p = document.createElement('div');
+      p.className = 'confetti';
+      p.style.left = Math.random() * 100 + '%';
+      p.style.background = colors[Math.floor(Math.random() * colors.length)];
+      p.style.animationDuration = (2 + Math.random() * 1.5) + 's';
+      p.style.width = p.style.height = (8 + Math.random() * 10) + 'px';
+      stage.appendChild(p);
+      setTimeout(() => p.remove(), 3600);
+    }
+  }
+
+  nextBtn.addEventListener('click', () => {
+    current++;
+    if (current < challenges.length) {
+      loadChallenge(current);
+    } else {
+      challengeArea.style.display = 'none';
+      successBanner.classList.remove('show');
+      finalScreen.classList.add('show');
+      updateDots();
+      dots.forEach(d => d.classList.add('done'));
+    }
+  });
+
+  restartBtn.addEventListener('click', () => {
+    current = 0;
+    loadChallenge(0);
+  });
+
+  // init
+  loadChallenge(0);
+})();
+</script>
+
+</body>
+</html>
